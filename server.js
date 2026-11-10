@@ -79,18 +79,38 @@ io.on('connection', (socket) => {
         });
     });
 
-    // 3. Quando un giocatore guadagna soldi (esempio)
+    // 3. Quando un giocatore raccoglie legna
+    socket.on('collectWood', (data) => {
+        const roomName = data.room;
+        const sql = 'UPDATE game_sessions SET wood = wood + 1 WHERE room_name = $1 RETURNING *';
+        pool.query(sql, [roomName], (err, result) => {
+            if (err) { console.error(err); return; }
+            io.to(roomName).emit('gameStateUpdate', result.rows[0]);
+        });
+    });
+
+    // 4. Quando un giocatore raccoglie un fiore
+    socket.on('collectFlower', (data) => {
+        const roomName = data.room;
+        const sql = 'UPDATE game_sessions SET flowers = flowers + 1 WHERE room_name = $1 RETURNING *';
+        pool.query(sql, [roomName], (err, result) => {
+            if (err) { console.error(err); return; }
+            io.to(roomName).emit('gameStateUpdate', result.rows[0]);
+        });
+    });
+
+    // 5. Quando un giocatore guadagna soldi (CORRETTO: $1 stanza, $2 importo)
     socket.on('addMoney', (data) => {
         const roomName = data.room;
         const amount = data.amount;
-        const sql = 'UPDATE game_sessions SET money = money + $1 WHERE room_name = $1 RETURNING *';
+        const sql = 'UPDATE game_sessions SET money = money + $2 WHERE room_name = $1 RETURNING *';
         pool.query(sql, [roomName, amount], (err, result) => {
             if (err) { console.error(err); return; }
             io.to(roomName).emit('gameStateUpdate', result.rows[0]);
         });
     });
 
-    // 4. Quando un giocatore sale di livello (esempio)
+    // 6. Quando un giocatore sale di livello
     socket.on('levelUp', (data) => {
         const roomName = data.room;
         const sql = 'UPDATE game_sessions SET level = level + 1 WHERE room_name = $1 RETURNING *';
