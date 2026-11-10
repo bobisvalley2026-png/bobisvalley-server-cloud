@@ -38,6 +38,69 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
     console.log('🎮 Giocatore connesso:', socket.id);
 
+    // --- INIZIO BLOCCO MULTIPLAYER ---
+     // --- LOGICA PER IL MULTIPLAYER ---
+
+    // 1. Quando un giocatore si connette a una stanza multiplayer
+    socket.on('joinGame', (data) => {
+        const roomName = data.room; // Esempio: "stanza-amici-1"
+        socket.join(roomName);
+        console.log(`🎮 Giocatore ${socket.id} entrato nella stanza: ${roomName}`);
+
+        // Cerca se esiste già una partita per questa stanza
+        const sql = 'SELECT * FROM game_sessions WHERE room_name = $1';
+        pool.query(sql, [roomName], (err, result) => {
+            if (err) { console.error(err); return; }
+
+            if (result.rows.length > 0) {
+                // La partita esiste già: invia i dati al giocatore che si è appena connesso
+                socket.emit('gameStateUpdate', result.rows[0]);
+            } else {
+                // La partita non esiste: creala!
+                const insertSql = 'INSERT INTO game_sessions (room_name) VALUES ($1) RETURNING *';
+                pool.query(insertSql, [roomName], (err, res) => {
+                    if (err) { console.error(err); return; }
+                    // Invia i dati iniziali a tutti i giocatori nella stanza
+                    io.to(roomName).emit('gameStateUpdate', res.rows[0]);
+                });
+            }
+        });
+    });
+
+    // 2. Quando un giocatore raccoglie una bacca
+    socket.on('collectBerry', (data) => {
+        const roomName = data.room;
+        // Aggiunge 1 bacca al totale della stanza
+        const sql = 'UPDATE game_sessions SET berries = berries + 1 WHERE room_name = $1 RETURNING *';
+        pool.query(sql, [roomName], (err, result) => {
+            if (err) { console.error(err); return; }
+            // Invia il nuovo stato aggiornato a TUTTI i giocatori nella stanza
+            io.to(roomName).emit('gameStateUpdate', result.rows[0]);
+        });
+    });
+
+    // 3. Quando un giocatore guadagna soldi (esempio)
+    socket.on('addMoney', (data) => {
+        const roomName = data.room;
+        const amount = data.amount;
+        const sql = 'UPDATE game_sessions SET money = money + $1 WHERE room_name = $1 RETURNING *';
+        pool.query(sql, [roomName, amount], (err, result) => {
+            if (err) { console.error(err); return; }
+            io.to(roomName).emit('gameStateUpdate', result.rows[0]);
+        });
+    });
+
+    // 4. Quando un giocatore sale di livello (esempio)
+    socket.on('levelUp', (data) => {
+        const roomName = data.room;
+        const sql = 'UPDATE game_sessions SET level = level + 1 WHERE room_name = $1 RETURNING *';
+        pool.query(sql, [roomName], (err, result) => {
+            if (err) { console.error(err); return; }
+            io.to(roomName).emit('gameStateUpdate', result.rows[0]);
+        });
+    });
+    // --- FINE BLOCCO MULTIPLAYER ---
+
     // Salva un punteggio nel database (Nota la sintassi $1, $2 di PostgreSQL)
     socket.on('saveScore', (data) => {
         const { username, score } = data;
