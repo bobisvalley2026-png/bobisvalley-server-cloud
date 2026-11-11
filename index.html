@@ -377,12 +377,12 @@ const T3=THREE,PI=Math.PI,rnd=Math.random,cl=(v,a,b)=>Math.max(a,Math.min(b,v)),
 const R0=7.5,ZR=R0/2,ZD=R0+2.2,ZP=[45,135,180,225,270,315].map(a=>({x:Math.cos(a*PI/180)*ZD,z:Math.sin(a*PI/180)*ZD})),PX0=R0-1.2,PX1=R0+6.4,SPOT=PX1-1.6,DOCK=R0+3.6,HR=[3.9,3.9,4.7],HC=[25,85,150],GY=.48,PY=.62;
 let P=Object.assign({flw:[0,0,0],tot:0,bag:0,cash:0,pl:0,exp:0,house:null},JSON.parse(S.get('prog','{}')));
 if(P.xp==null)P.xp=Math.floor((P.tot|0)/2);/* v1.17: punti livello (bacca 2, albero 5) · 50 punti per livello */
-const XPL=50,sv=()=>S.set('prog',JSON.stringify(P,(k,v)=>k=='pk'?undefined:v)),lvl=()=>Math.floor(P.xp/XPL);
-function addXP(n){const l0=lvl();P.xp+=n;const l=lvl();if(l>l0){sfx.lvl();cheerT=1.8;toast(l==1?'⭐ Livello 1! Costruzione sbloccata 🔨':l==2?'⭐ Livello 2! Pesca sbloccata 🎣':'⭐ Livello '+l+'!',3500);if(l>=1&&!P.starter)setTimeout(starterPick,900)}}
+const XPL=50,sv=()=>S.set('prog',JSON.stringify(P,(k,v)=>k=='pk'?undefined:v)),lvl=()=>Math.floor((+P.xp||0)/XPL);
+function addXP(n){const l0=lvl();P.xp=(+P.xp||0)+n;const l=lvl();if(l>l0){sfx.lvl();cheerT=1.8;toast(l==1?'⭐ Livello 1! Costruzione sbloccata 🔨':l==2?'⭐ Livello 2! Pesca sbloccata 🎣':'⭐ Livello '+l+'!',3500);if(l>=1&&!P.starter)setTimeout(starterPick,900)}}
 const PAL=[['Grigio'],['Verde','#e6f8e0','#b8e8b4','#79c79a'],['Azzurro','#e3f1ff','#b5dbf7','#7fb4e0'],['Rosa','#ffe8f1','#f8bfd6','#e48fb2'],['Viola','#f0e8ff','#cdbcf5','#9d86d6'],['Ciano','#e0fbfb','#b0eeee','#6fcfd0'],['Giallo','#fff8dc','#ffe7a3','#e3b44a'],['Arancio','#fff0e3','#ffcfa3','#ee9550'],['Menta','#e6fbf2','#b6efd8','#56c497'],['Corallo','#ffece8','#ffc2b6','#ec7b66'],['Lavanda','#f3efff','#d9d0ff','#a596e6'],['Notte','#e4e8f6','#aab4d6','#5d6a99']];
 let th=+S.get('th',0);const TC=()=>th?PAL[th].slice(1):['#f4f5f7','#c9ccd2','#8d9199'];
 function toast(m,ms=2400){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),ms)}
-function hud(){$('#bag').textContent=P.bag;$('#lv').textContent=lvl();$('#bar').style.setProperty('--p',(P.xp%XPL/XPL*100)+'%');$('#pl').textContent=P.pl;$('#cash').textContent=P.cash+(P.flw.some(n=>n)?' 🌸'+P.flw.reduce((a,b)=>a+b,0):'');$('#bmb').textContent=inOW?'🏘️':lvl()>=1?'🔨':'🔒';bmUpd()}
+function hud(){$('#bag').textContent=P.bag;$('#lv').textContent=lvl();$('#bar').style.setProperty('--p',((+P.xp||0)%XPL/XPL*100)+'%');$('#pl').textContent=P.pl;$('#cash').textContent=P.cash+(P.flw.some(n=>n)?' 🌸'+P.flw.reduce((a,b)=>a+b,0):'');$('#bmb').textContent=inOW?'🏘️':lvl()>=1?'🔨':'🔒';bmUpd()}
 const hm={wall:new T3.MeshLambertMaterial(),roof:new T3.MeshLambertMaterial(),trim:new T3.MeshLambertMaterial(),pl:new T3.MeshLambertMaterial(),sh:new T3.MeshLambertMaterial()};
 function theme(i){th=i;S.set('th',i);const r=document.documentElement.style;['--g1','--g2','--g3'].forEach((k,j)=>i?r.setProperty(k,PAL[i][j+1]):r.removeProperty(k));const c=TC();hm.wall.color.set(c[0]);hm.pl.color.set(c[0]);hm.trim.color.set(c[1]);hm.roof.color.set(c[2]);hm.sh.color.set(c[2]);document.querySelectorAll('#pal button').forEach((b,j)=>b.classList.toggle('sel',j==i))}
 $('#pal').innerHTML=PAL.map((p,i)=>`<button class="glass" data-i="${i}"><i style="background:${p[2]||'#c9ccd2'}"></i>${p[0]}</button>`).join('');
@@ -3152,7 +3152,7 @@ let mpBusy=false;
 function mpEnter(create){if(mpBusy)return;const code=$(create?'#mpcc':'#mpjc').value,name=$('#mpn').value.trim();
  if(!/^\d{5}$/.test(code))return mpSt('Il codice deve avere esattamente 5 cifre.');if(!name)return mpSt('Scrivi il tuo nome.');
  S.set('name',name);mpBusy=true;mpSt('Collegamento al server… <small>(la prima volta può volerci fino a un minuto)</small>');
- const fresh={flw:[0,0,0],tot:0,bag:0,cash:0,pl:0,exp:0,house:null},copy=create&&$('#mpcp').checked;
+ const fresh={flw:[0,0,0],tot:0,bag:0,cash:0,pl:0,exp:0,house:null,xp:0},copy=create&&$('#mpcp').checked;
  const fail=t=>{mpBusy=false;mpSt('⚠️ '+t)};
  mpIO().then(()=>{const so=mpSock();let done=false;
   const to=setTimeout(()=>{if(done)return;done=true;so.close();fail('Il server non risponde. Riprova tra poco.')},80000);
@@ -3178,7 +3178,7 @@ mpBadge.onclick=()=>{mpList.classList.toggle('on');mpBadgeUpd()};
 window.mpDirty=()=>{if(!mpB)return;clearTimeout(mpT);mpT=setTimeout(mpPush,350)};
 function mpPush(){if(!mpB||!mpWs||!mpWs.connected||!mpIn)return;const ops=mpDiff(mpFlatOf(P,owned),mpB);if(!ops.length)return;ops.forEach(o=>mpApply(mpB,o));mpWs.emit('mpOps',{n:++mpN,ops})}
 function mpAfter(struct){try{S.set('owned',JSON.stringify(owned))}catch(e){}try{sv();if(typeof hud=='function'&&pl)hud()}catch(e){}if(struct)mpNeedRef=true}
-function mpFull(state){const L=mpFlatOf(P,owned),pend=mpB?mpDiff(L,mpB):[],T=mpClone(state);pend.forEach(o=>mpApply(T,o));mpB=mpClone(state);let st=false;
+function mpFull(state){const L=mpFlatOf(P,owned),pend=mpB?mpDiff(L,mpB):[],T=mpClone(state);pend.forEach(o=>mpApply(T,o));/* stanze senza un valore (es. g.xp): per le chiavi che si sommano vale 0, non "cancella" (prima il livello diventava NaN) */new Set([...Object.keys(L),...Object.keys(T)]).forEach(p=>{if(T[p]===undefined&&L[p]!==undefined&&mpKind(p)=='a')T[p]=Array.isArray(L[p])?L[p].map(()=>0):0});mpB=mpClone(state);let st=false;
  new Set([...Object.keys(T),...Object.keys(L)]).forEach(p=>{if(JSON.stringify(T[p])!==JSON.stringify(L[p])){mpSetIn(P,owned,p,T[p]);if(mpStruct(p))st=true}});mpAfter(st);mpPush()}
 function mpRemote(ops){const L=mpFlatOf(P,owned);let st=false;
  ops.forEach(o=>{const before=mpClone(mpB[o.p]);mpApply(mpB,o);

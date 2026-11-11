@@ -150,6 +150,7 @@ io.on('connection', (socket) => {
             if (create) {
                 const st = data.state && typeof data.state == 'object' ? data.state : {};
                 for (const k of Object.keys(st)) if (!PATH_RE.test(k)) delete st[k];
+                for (const k of ['g.xp', 'g.bag', 'g.pl', 'g.cash', 'g.tot']) if (typeof st[k] != 'number') st[k] = 0; // contatori sempre presenti (il livello si calcola da g.xp)
                 room = await createRoom(code, st);
                 if (!room) return reply({ err: 'Questo codice è già usato da un\'altra stanza: scegline un altro.' });
             } else {
